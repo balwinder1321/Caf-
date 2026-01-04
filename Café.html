@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Odd Fellow's Café | Premium Delivery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #f4f1ea; }
+        .starbucks-green { background-color: #00704A; }
+        .btn-primary { background-color: #00704A; color: white; transition: 0.3s; }
+        .btn-primary:hover { background-color: #005a3c; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <nav class="flex justify-between items-center p-6 bg-white shadow-md sticky top-0 z-50">
+        <div class="flex items-center gap-2">
+            <div class="w-10 h-10 starbucks-green rounded-full"></div>
+            <h1 class="font-bold text-xl uppercase tracking-wider">The Odd Fellow's</h1>
+        </div>
+        <div class="flex gap-6 font-semibold">
+            <button onclick="showPage('home')">Home</button>
+            <button onclick="showPage('menu')">Menu</button>
+            <button onclick="showPage('admin')">Admin</button>
+            <button class="relative" onclick="showPage('cart')">🛒 <span id="cart-count" class="bg-red-500 text-white text-xs rounded-full px-1">0</span></button>
+        </div>
+    </nav>
+
+    <section id="home" class="p-10 text-center">
+        <div class="rounded-3xl overflow-hidden h-80 bg-cover bg-center flex items-center justify-center text-white" style="background-image: url('https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&q=80&w=1000');">
+            <div class="bg-black/40 p-10 w-full h-full flex flex-col justify-center">
+                <h2 class="text-5xl font-bold mb-4">Indulge in Extraordinary Tastes</h2>
+                <button onclick="showPage('menu')" class="btn-primary px-8 py-3 rounded-full self-center">ORDER NOW</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="menu" class="p-10 hidden">
+        <h3 class="text-2xl font-bold mb-6">Explore Our Offerings</h3>
+        <div id="menu-container" class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            </div>
+    </section>
+
+    <section id="admin" class="p-10 hidden">
+        <div class="max-w-xl mx-auto bg-white p-8 rounded-xl shadow-lg">
+            <h3 class="text-2xl font-bold mb-4 text-center">Admin Control Panel</h3>
+            <div class="space-y-4">
+                <input type="text" id="itemName" placeholder="Item Name" class="w-full border p-2 rounded">
+                <input type="number" id="itemPrice" placeholder="Price" class="w-full border p-2 rounded">
+                <input type="text" id="itemImg" placeholder="Image URL" class="w-full border p-2 rounded">
+                <button onclick="addItem()" class="w-full btn-primary py-2 rounded">Update/Add Item</button>
+            </div>
+            <div id="analytics" class="mt-8">
+                <h4 class="font-bold border-b pb-2">Order Analytics</h4>
+                <div id="sales-data" class="text-sm mt-2">No orders yet.</div>
+            </div>
+        </div>
+    </section>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // YOUR FIREBASE CONFIG
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- CORE FUNCTIONS ---
+
+        window.showPage = (pageId) => {
+            ['home', 'menu', 'admin'].forEach(p => document.getElementById(p).classList.add('hidden'));
+            document.getElementById(pageId).classList.remove('hidden');
+            if(pageId === 'menu') loadMenu();
+        };
+
+        window.loadMenu = async () => {
+            const querySnapshot = await getDocs(collection(db, "menu"));
+            const container = document.getElementById('menu-container');
+            container.innerHTML = '';
+            querySnapshot.forEach((doc) => {
+                const item = doc.data();
+                container.innerHTML += `
+                    <div class="bg-white p-4 rounded-2xl shadow-sm hover:shadow-md transition">
+                        <img src="${item.img}" class="h-48 w-full object-cover rounded-xl mb-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h4 class="font-bold text-lg">${item.name}</h4>
+                                <p class="text-green-700 font-semibold">₹${item.price}</p>
+                            </div>
+                            <button onclick="addToCart('${item.name}', ${item.price})" class="starbucks-green text-white px-4 py-1 rounded-full">+</button>
+                        </div>
+                    </div>
+                `;
+            });
+        };
+
+        window.addItem = async () => {
+            const name = document.getElementById('itemName').value;
+            const price = document.getElementById('itemPrice').value;
+            const img = document.getElementById('itemImg').value;
+            await addDoc(collection(db, "menu"), { name, price, img, sales: 0 });
+            alert("Item Added!");
+            loadMenu();
+        };
+
+        // Cart Logic
+        let cart = [];
+        window.addToCart = (name, price) => {
+            cart.push({name, price});
+            document.getElementById('cart-count').innerText = cart.length;
+        };
+    </script>
+</body>
+</html>
